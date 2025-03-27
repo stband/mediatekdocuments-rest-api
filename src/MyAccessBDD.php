@@ -46,6 +46,12 @@ class MyAccessBDD extends AccessBDD {
             case "etat" :
                 // select portant sur une table contenant juste id et libelle
                 return $this->selectTableSimple($table);
+            case "commandes" :
+                // toutes les commandes livres et DVD
+                return $this->selectAllCommandes();
+            case "commandesparid" :
+                // toutes les commandes liées à un id livres ou DVD
+                return $this->selectCommandesByIdLivreDvd($champs);
             case "" :
                 // return $this->uneFonction(parametres);
             default:
@@ -63,8 +69,9 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementInsert(string $table, ?array $champs) : ?int{
         switch($table){
-            case "" :
+            case "commandetotale":
                 // return $this->uneFonction(parametres);
+                return $this->insertCommandeComplete($champs);
             default:                    
                 // cas général
                 return $this->insertOneTupleOneTable($table, $champs);	
@@ -276,5 +283,138 @@ class MyAccessBDD extends AccessBDD {
         $requete .= "order by e.dateAchat DESC";
         return $this->conn->queryBDD($requete, $champNecessaire);
     }		    
+
+
+    /**
+     * Génère un nouvel ID au format texte (zéro-rempli) pour une table donnée.
+     *
+     * Cette méthode constitue la base de l'incrémentation des identifiants. Elle est
+     * appelée par toutes les fonctions responsables de la création d'un nouvel enregistrement.
+     *
+     * Processus :
+     *   1. Récupère l'ID existant au format varchar(5).
+     *   2. Convertit l'ID en entier (int) pour permettre l'opération mathématique.
+     *   3. Incrémente l'ID de 1.
+     *   4. Reconvertion de l'ID incrémenté en varchar(5) afin de conserver le format standard.
+     *
+     * @param string $nomTable Nom de la table (ex: "commande")
+     * @param int $taille Nombre total de caractères attendus (par défaut 5)
+     * @return string|null Le nouvel ID incrémenté au format varchar(5) (ex: "00015") ou null si erreur
+     */
+    private function genererNouvelId(string $nomTable, int $taille = 5) : ?string {
+        try {
+            $requete = "SELECT MAX(CAST(id AS UNSIGNED)) AS maxId FROM $nomTable";
+            $resultat = $this->conn->queryBDD($requete);
+            $nouvelID = (int)$resultat[0]['maxId'] + 1;
+            return str_pad($nouvelID, $taille, "0", STR_PAD_LEFT);
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Insère une commande complète dans la base de données.
+     *
+     * Cette méthode réalise l'insertion d'une commande dans deux tables distinctes : 
+     * - La table "commande", pour enregistrer les informations principales (ID, date de commande, montant).
+     * - La table "commandedocument", pour enregistrer les détails complémentaires (nombre d'exemplaires, 
+     *   identifiant du livre/DVD, et un identifiant de suivi fixé à "00001").
+     *
+     * Processus :
+     *   1. Génération d'un nouvel ID pour la commande via la méthode genererNouvelId.
+     *   2. Insertion des lignes dans les tables distinctes. Par défaut l'ID de suivi est préféfini sur ("00001")
+     *   3. Si les deux insertions réussissent (retour de 1 pour chacune), la méthode retourne 1.
+     *      Sinon, ou en cas d'exception, la méthode retourne null.
+     *
+     * @param array $champs Tableau associatif contenant les champs nécessaires :
+     *                      - 'dateCommande' : Date de la commande.
+     *                      - 'montant' : Montant total de la commande.
+     *                      - 'nbExemplaire' : Nombre d'exemplaires commandés.
+     *                      - 'idLivreDvd' : Identifiant du livre ou DVD concerné.
+     * @return int|null Retourne 1 en cas de succès ou null si une des insertions échoue ou si une exception est levée.
+     */
+        private function insertCommandeComplete(array $champs) : ?int {
+        try {
+            // Générer nouvel ID de commande
+            $nouvelId = $this->genererNouvelId("commande");
+
+            // Insertion dans la table commande
+            $requeteCommande = $this->insertOneTupleOneTable("commande", [
+                "id" => $nouvelId,
+                "dateCommande" => $champs["dateCommande"],
+                "montant" => $champs["montant"]
+            ]);
+
+            // Insertion dans la table commandedocument
+            $requeteCommandeDocument = $this->insertOneTupleOneTable("commandedocument", [
+                "id" => $nouvelId,
+                "nbExemplaire" => $champs["nbExemplaire"],
+                "idLivreDvd" => $champs["idLivreDvd"],
+                "idSuivi" => "00001"
+            ]);
+
+            // Vérifie que les deux commandes soient un succès
+            if ($requeteCommande === 1 && $requeteCommandeDocument === 1) {
+                return 1;
+            } else {
+                return null;
+            }
+
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
     
+    /**
+     * Récupère toutes les commandes enregistrées.
+     *
+     * Cette méthode exécute une requête SQL qui joint les tables "commande", "commandedocument", "document"
+     * et "suivi" pour obtenir toutes les informations relatives aux commandes. Les données retournées
+     * incluent l'identifiant de la commande, l'identifiant du document (livre ou DVD), le titre du document,
+     * la date de la commande, le montant, le nombre d'exemplaires commandés ainsi que le libellé du statut.
+     *
+     * Les résultats sont triés par date de commande dans l'ordre décroissant pour afficher en premier
+     * les commandes les plus récentes.
+     *
+     * @return array|null Un tableau contenant les commandes ou null.
+     */
+    private function selectAllCommandes() : ?array {
+        $requete = "
+            SELECT c.id AS idCommande, cd.idLivreDvd, d.titre, c.dateCommande, c.montant, cd.nbExemplaire, s.libelle AS statut
+            FROM commande c
+            JOIN commandedocument cd ON c.id = cd.id
+            JOIN document d ON cd.idLivreDvd = d.id
+            JOIN suivi s ON cd.idSuivi = s.id
+            ORDER BY c.dateCommande DESC;
+        ";
+        return $this->conn->queryBDD($requete);
+    }
+
+    /**
+     * Récupère les commandes pour un document spécifique (livre ou DVD).
+     *
+     * Cette méthode nécessite un tableau associatif contenant l'ID du document sous la clé "idLivreDvd".
+     * Si cette clé n'est pas présente, la méthode retourne null. Sinon, elle exécute une requête SQL qui
+     * joint les tables "commande", "commandedocument" et "suivi" afin d'obtenir les informations relatives aux commandes
+     * du document spécifié. Les données récupérées incluent l'identifiant de la commande, la date de la commande,
+     * le montant, le nombre d'exemplaires commandés ainsi que le libellé du statut. Les résultats sont triés par
+     * date de commande dans l'ordre décroissant.
+     *
+     * @param array $champs Un tableau contenant au minimum la clé "idLivreDvd".
+     * @return array|null Un tableau de commandes spécifiques ou null.
+     */
+    private function selectCommandesByIdLivreDvd(array $champs) : ?array {
+        if (!isset($champs['idLivreDvd'])) return null;
+
+        $requete = "
+            SELECT c.id AS idCommande, c.dateCommande, c.montant, cd.nbExemplaire, s.libelle AS statut
+            FROM commande c
+            JOIN commandedocument cd ON c.id = cd.id
+            JOIN suivi s ON cd.idSuivi = s.id
+            WHERE cd.idLivreDvd = :idLivreDvd
+            ORDER BY c.dateCommande DESC;
+        ";
+        return $this->conn->queryBDD($requete, ['idLivreDvd' => $champs['idLivreDvd']]);
+    }
 }
