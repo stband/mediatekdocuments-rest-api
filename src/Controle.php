@@ -35,8 +35,12 @@ class Controle{
      * @param array|null $champs
      */
     public function demande(string $methodeHTTP, string $table, ?string $id, ?array $champs){
-        $result = $this->myAaccessBDD->demande($methodeHTTP, $table, $id, $champs);
-        $this->controleResult($result);
+        try {
+            $result = $this->myAaccessBDD->demande($methodeHTTP, $table, $id, $champs);
+            $this->controleResult($result);
+        } catch (Exception $e) {
+            $this->reponse(500, "Erreur serveur", ($_ENV['APP_ENV'] ?? 'prod') === 'dev' ? $e->getMessage() : null);
+        }
     }
 
     /**

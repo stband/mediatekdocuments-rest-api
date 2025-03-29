@@ -111,5 +111,25 @@ class Connexion {
             throw $e;
         }
     }
-    
+
+    /**
+     * Démarre une transaction
+     */
+    public function beginTransaction(): void {
+        $this->conn->beginTransaction();
+    }
+
+    /**
+     * Valide une transaction
+     */
+    public function commit(): void {
+        $this->conn->commit();
+    }
+
+    /**
+     * Annule une transaction
+     */
+    public function rollback(): void {
+        $this->conn->rollBack();
+    }
 }
