@@ -78,5 +78,40 @@ class Controle{
     public function unauthorized(){
         $this->reponse(401, "authentification incorrecte");
     }
+
+    /**
+     * Vérifie la connexion de l'utilisateur.
+     *
+     * La méthode selectUtilisateurByLogin pour récupérer les informations de l'utilisateur
+     * correspondant au login fourni. La vérification du mot de passe est effectuée à l'aide de password_verify().
+     *
+     * Si l'utilisateur n'est pas trouvé ou si le mot de passe ne correspond pas, la méthode envoie une réponse non autorisée.
+     * 
+     * En cas de succès, le hash du mot de passe est supprimé de la réponse et une réponse avec le code HTTP 200,
+     * accompagnée d'un message de confirmation et des informations de l'utilisateur (sans le mot de passe), est renvoyée.
+     *
+     * Ce qui permet à l'application de stocker des informations sur la session actuelle et l'utilisateur.
+     *
+     * @param array|null $champs Un tableau contenant les champs de connexion ("login" et "mdp").
+     */
+        public function verifierConnexion(?array $champs) {
+        if (!isset($champs["login"]) || !isset($champs["mdp"])) {
+            $this->reponse(400, "Données d'authentification manquantes");
+            return;
+        }
+
+        // On apppel la méthode selectUtilisateurByLogin qui va s'occuper de faire la requête select.
+        $utilisateur = $this->myAaccessBDD->selectUtilisateurByLogin($champs["login"]);
+
+        if (!$utilisateur || !password_verify($champs["mdp"], $utilisateur[0]["motdepasse"])) {
+            $this->unauthorized();
+            return;
+        }
+
+        // Supprimer le hash du mot de passe de la réponse.
+        unset($utilisateur[0]["motdepasse"]);
+
+        $this->reponse(200, "Connexion réussie", $utilisateur[0]);
+    }
     
 }

@@ -54,8 +54,6 @@ class MyAccessBDD extends AccessBDD {
                 return $this->selectAllCommandesByIdLivreDvd($champs);
 			case "abonnement" :
 				return $this->selectAllAbonnements();
-            case "" :
-                // return $this->uneFonction(parametres);
             default:
                 // cas général
                 return $this->selectTuplesOneTable($table, $champs);
@@ -509,6 +507,23 @@ class MyAccessBDD extends AccessBDD {
             return $this->conn->queryBDD($requete, $champs);
         }
     }	
+
+    /**
+     * Sélectionne les informations d'un utilisateur en fonction de son login.
+     *
+     * @param string $login Le login de l'utilisateur.
+     * 
+     * @return array|null Un tableau associatif contenant les données de l'utilisateur et du service,
+     *                    ou null si aucun utilisateur n'a été trouvé.
+     */
+    public function selectUtilisateurByLogin(string $login): ?array {
+    $requete = "SELECT u.id, u.nom, u.login, u.motdepasse, s.libelle AS service ";
+    $requete .= "FROM utilisateur u ";
+    $requete .= "JOIN service s ON u.idService = s.id ";
+    $requete .= "WHERE u.login = :login";
+
+    return $this->conn->queryBDD($requete, ["login" => $login]);
+    }
 
     /**
      * Demande de modification (UPDATE) d'un tuple dans une table.
