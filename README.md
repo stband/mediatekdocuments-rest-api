@@ -1,27 +1,55 @@
-<h1>Présentation de l'API</h1>
+# Présentation de l'API
+
 Cette API, écrite en PHP, est basée sur la structure de l'API présentée dans le dépôt suivant :<br>
 https://github.com/CNED-SLAM/rest_chocolatein<br>
 Le readme de ce dépôt présente la structure de la base de l'API (rôle de chaque fichier) et comment l'exploiter.<br>
 Les ajouts faits dans cette API ne concernent que les fichiers '.env' (qui contient les données sensibles d'authentification et d'accès à la BDD) et 'MyAccessBDD.php' (dans lequel de nouvelles fonctions ont été ajoutées pour répondre aux demandes de l'application).<br>
-Cette API permet d'exécuter des requêtes SQL sur la BDD Mediatek86 créée avec le SGBDR MySQL.<br>
-Elle est accessible via une authentification "basique" (avec login="admin", pwd="adminpwd").<br>
-Sa vocation actuelle est de répondre aux demandes de l'application MediaTekDocuments, mise en ligne sur le dépôt :<br>
-https://github.com/CNED-SLAM/MediaTekDocuments
 
-<h1>Installation de l'API en local</h1>
-Pour tester l'API REST en local, voici le mode opératoire (similaire à celui donné dans le dépôt d'API de base) :
-<ul>
-   <li>Installer les outils nécessaires (WampServer ou équivalent, NetBeans ou équivalent pour gérer l'API dans un IDE, Postman pour les tests).</li>
-   <li>Télécharger le zip du code de l'API et le dézipper dans le dossier www de wampserver (renommer le dossier en "rest_mediatekdocuments", donc en enlevant "_master").</li>
-   <li>Si 'Composer' n'est pas installé, le télécharger avec ce lien et l'insstaller : https://getcomposer.org/Composer-Setup.exe </li>
-   <li>Dans une fenêtre de commandes ouverte en mode admin, aller dans le dossier de l'API et taper 'composer install' puis valider pour recréer le vendor.</li>
-   <li>Récupérer le script metiak86.sql en racine du projet puis, avec phpMyAdmin, créer la BDD mediatek86 et, dans cette BDD, exécuter le script pour remplir la BDD.</li>
-   <li>Ouvrir l'API dans NetBeans pour pouvoir analyser le code et le faire évoluer suivant les besoins.</li>
-   <li>Pour tester l'API avec Postman, ne pas oublier de configurer l'authentification (onglet "Authorization", Type "Basic Auth", Username "admin", Password "adminpwd".</li>
-</ul>
-<h1>Exploitation de l'API</h1>
-Adresse de l'API (en local) : http://localhost/rest_mediatekdocuments/ <br>
+Cette API permet d'exécuter des requêtes SQL sur la BDD `mediatek86` créée avec le SGBD MySQL.  
+Elle est sécurisée par une authentification HTTP "Basic Auth" avec :  
+**login** = `admin`  
+**mot de passe** = `adminpwd`
+
+Elle est utilisée pour l'application de gestion documentaire **MediaTekDocuments** (C#) disponible ici :
+https://github.com/stband/mediatekdocuments-app
+
+---
+
+# Installation de l'API en local
+
+Pour installer et tester l'API sur votre poste local :
+
+1. Installez les outils suivants (ou équivalent) :
+   - Serveur local (par exemple WampServer)
+   - IDE comme NetBeans, VS Code, ou Neovim (pour ceux qui savent utiliser `:q!`).
+   - [Postman](https://www.postman.com/) pour tester les requêtes, ou simplement via `curl` dans un terminal.
+
+2. Clonez ce dépôt ou téléchargez-le, puis placez le dossier dans `www` de WampServer.
+   Renommez-le en `rest_mediatekdocuments`.
+
+3. Si **Composer** n’est pas installé :
+   - Téléchargez-le ici : https://getcomposer.org/Composer-Setup.exe
+   - Puis lancez `composer install` dans le dossier de l’API pour générer le dossier `vendor`.
+
+4. Importez le fichier `mediatek86.sql` dans phpMyAdmin :
+   - Créez une base `mediatek86`
+   - Exécutez le script pour insérer la structure et les données (dont quelques utilisateurs).
+
+5. Dans **Postman**, configurez l'authentification dans chaque requête :
+   - Onglet **Authorization**
+   - **Type** : Basic Auth
+   - **Username** : `admin`
+   - **Password** : `adminpwd`
+
+---
+
+# Utilisation de l'API
+
+Adresse locale de base :  
+`http://localhost/rest_mediatekdocuments/`
+
 Voici les différentes possibilités de sollicitation de l'API, afin d'agir sur la BDD, en ajoutant des informations directement dans l'URL (visible) et éventuellement dans le body (invisible) suivant les besoins : 
+
 <h2>Récupérer un contenu (select)</h2>
 Méthode HTTP : <strong>GET</strong><br>
 http://localhost/rest_mediatekdocuments/table/champs (champs optionnel)
@@ -61,12 +89,38 @@ http://localhost/rest_mediatekdocuments/table/champs (champs optionnel)<br>
    <li> 'champs' (optionnel) doit être remplacé par la liste des champs (nom/valeur) qui serviront déterminer les lignes à supprimer (au format json</li>
 </ul>
 
-<h1>Les fonctionnalités ajoutées</h1>
-Dans MyAccessBDD, plusieurs fonctions ont été ajoutées pour répondre aux demandes actuelles de l'application C# MediaTekDocuments :<br>
-<ul>
-   <li><strong>selectTableSimple : </strong>récupère les lignes des tables simples (genre, public, rayon, etat) contenant juste 'id' et 'libelle', dans l'ordre alphabétique sur 'libelle'. Cette fonction est appelée pour  remplir les combos correspondants.</li>
-   <li><strong>selectAllLivres : </strong>récupère la liste des livres avec les informations correspondantes (d'où nécessité de jointures).</li>
-   <li><strong>selectAllDvd : </strong>même chose pour les dvd.</li>
-   <li><strong>selectAllRevues : </strong>même chose pour les revues.</li>
-   <li><strong>selectExemplairesRevue : </strong>récupère les exemplaires d'une revue dont l'id sera donné.</li>
-</ul>
+---
+
+# Comptes utilisateurs de démonstration
+
+Voici les comptes disponibles par défaut pour tester l’application :
+
+| Identifiant     | Mot de passe     | Service         | Accès autorisé |
+|------------------|------------------|------------------|----------------|
+| `admin`          | `admin`          | Administrateur   | Oui         |
+| `pret`           | `pret`           | Prêts            | Oui         |
+| `administratif`  | `administratif`  | Administratif    | Oui         |
+| `culture`        | `culture`        | Culture          | Non         |
+
+*Ces utilisateurs sont insérés par défaut via le script `mediatek86.sql`.  
+Ils sont là uniquement pour tester l'application.*
+
+## Ajouter vos propres utilisateurs
+
+Il n'existe pas encore d’interface de création de comptes.
+Pour le moment, l’ajout d’un utilisateur doit se faire manuellement dans la base de données.
+
+Pour créer manuellement un utilisateur, insérez une nouvelle ligne dans la table `utilisateur`.  
+Le mot de passe doit être **haché** avec l'algorithme `bcrypt`.
+
+### Exemple de génération du hash :
+
+En ligne de commande (si PHP installé) :
+
+```bash
+php -r "echo password_hash('votreMotDePasse', PASSWORD_BCRYPT) . PHP_EOL;"
+```
+
+En ligne :
+
+- https://bcrypt-generator.com/
