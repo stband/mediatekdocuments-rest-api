@@ -1,2 +1,5 @@
 /nbproject/private/
 /vendor/
+phpDocumentor.phar
+src/*-descriptors/
+src/*-files/
